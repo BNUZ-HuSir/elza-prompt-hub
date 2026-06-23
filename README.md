@@ -2,22 +2,17 @@
 
 ComfyUI 自定义节点 — 多栏预设词切换器，支持随机词语法。
 
-## 功能
+## 已有功能
 
 - **多栏预设**：最多 99 组预设词，通过 `count` 控制数量，`index` 切换当前生效的预设
-- **随机词语法**：
-  - `{a|b}` → 从选项中随机选 1 个
-  - `{N$$ a|b|c}` → 从选项中随机选 N 个
+- **随机词语法**：`{a|b}` 随机选 1 个，`{N$$ a|b|c}` 随机选 N 个
+- **超限警告**：N 超过选项数时控制台输出警告，自动限制
 - **无语法透传**：不含 `{...}` 时原样输出
+- **节点描述**：悬浮显示使用说明
 
 ## 安装
 
-```bash
-cd ComfyUI/custom_nodes/
-git clone https://github.com/<your-username>/elza-prompt-hub.git
-```
-
-或手动下载解压到 `ComfyUI/custom_nodes/elza-prompt-hub/`。
+在 [Releases](https://github.com/BNUZ-HuSir/elza-prompt-hub/releases) 下载 zip，解压到 `ComfyUI/custom_nodes/elza-prompt-hub/`。
 
 ## 使用
 
