@@ -9,8 +9,10 @@ Elza 的 ComfyUI 自定义节点集。
 ## 节点
 
 ### Prompt Switch
-
 多栏预设词切换器，从多组预设中选一组输出，支持随机词语法。
+
+<img width="864" height="544" alt="image" src="https://github.com/user-attachments/assets/334a078a-5a98-43fb-a9fe-07e5c85dec30" />
+
 
 **参数**
 
