@@ -14,19 +14,19 @@ Elza 的 ComfyUI 自定义节点集。
 <img width="864" height="544" alt="image" src="https://github.com/user-attachments/assets/334a078a-5a98-43fb-a9fe-07e5c85dec30" />
 
 
-**参数**
+**输入**
 
-| 参数 | 类型 | 范围 | 说明 |
-|------|------|------|------|
-| index | INT | 0 ~ count-1 | 选择第几组预设 |
-| count | INT | 1 ~ 99 | 输入框数量 |
-| prompt_0 ~ prompt_98 | STRING (multiline) | — | 预设词内容 |
+| 参数 | 说明 | 限制 |
+|------|------|------|
+| index | 选择第几组预设 | 0 ~ count-1 |
+| count | 输入框数量 | 1 ~ 99 |
+| prompt_0 ~ prompt_98 | 预设词内容（多行文本） | — |
 
 **输出**
 
-| 类型 | 名称 |
+| 名称 | 说明 |
 |------|------|
-| STRING | text |
+| text | 解析后的预设词文本 |
 
 **使用**
 
@@ -54,4 +54,9 @@ Python 标准库（`re`、`random`），无需额外安装。
 
 ## License
 
-MIT
+本项目基于 [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) 许可。
+
+- ✅ 个人使用、学习、二次开发
+- ✅ 修改和分发（需注明原作者）
+- ❌ 商业用途
+- ❌ 任何违反法律法规的使用

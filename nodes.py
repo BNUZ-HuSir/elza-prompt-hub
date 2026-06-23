@@ -51,7 +51,7 @@ class ElzaPromptHub_PromptSwitch:
                    "• index: 当前生效的预设编号\n"
                    "• count: 输入框数量\n"
                    "• 语法: {a|b} 随机选1个, {N$$ a|b|c} 随机选N个\n"
-                   "• 不含语法时原样输出，选中框有 ▶ 标识")
+                   "• 不含语法时原样输出")
 
     @classmethod
     def IS_CHANGED(cls, **kwargs):
