@@ -1,39 +1,55 @@
 # Elza Prompt Hub
 
-ComfyUI 自定义节点 — 多栏预设词切换器，支持随机词语法。
-
-## 已有功能
-
-- **多栏预设**：最多 99 组预设词，通过 `count` 控制数量，`index` 切换当前生效的预设
-- **随机词语法**：`{a|b}` 随机选 1 个，`{N$$ a|b|c}` 随机选 N 个
-- **超限警告**：N 超过选项数时控制台输出警告，自动限制
-- **无语法透传**：不含 `{...}` 时原样输出
-- **节点描述**：悬浮显示使用说明
+Elza 的 ComfyUI 自定义节点集。
 
 ## 安装
 
-在 [Releases](https://github.com/BNUZ-HuSir/elza-prompt-hub/releases) 下载 zip，解压到 `ComfyUI/custom_nodes/elza-prompt-hub/`。
+从 [Releases](https://github.com/BNUZ-HuSir/elza-prompt-hub/releases) 下载 zip，解压到 `ComfyUI/custom_nodes/elza-prompt-hub/`。
 
-## 使用
+## 节点
 
-1. 在节点菜单 `Elza/prompt` 下找到 **Elza Prompt Switch**
+### Prompt Switch
+
+多栏预设词切换器，从多组预设中选一组输出，支持随机词语法。
+
+**参数**
+
+| 参数 | 类型 | 范围 | 说明 |
+|------|------|------|------|
+| index | INT | 0 ~ count-1 | 选择第几组预设 |
+| count | INT | 1 ~ 99 | 输入框数量 |
+| prompt_0 ~ prompt_98 | STRING (multiline) | — | 预设词内容 |
+
+**输出**
+
+| 类型 | 名称 |
+|------|------|
+| STRING | text |
+
+**使用**
+
+1. 右键菜单 → `Elza/prompt` → `Elza Prompt Switch`
 2. 设置 `count` 控制输入框数量
-3. 在各输入框中填入预设词
+3. 在各框中填入预设词
 4. 切换 `index` 选择当前生效的预设
 
-### 语法示例
+## 随机词语法
 
-| 输入 | 可能输出 |
-|------|----------|
-| `{红\|蓝}` | `红` 或 `蓝` |
-| `{2$$ 猫\|狗\|鸟}` | `猫,狗` 或 `猫,鸟` 或 `狗,鸟` |
-| `{红\|蓝}色的{猫\|狗}` | `红色的猫` 等 |
-| `hello world` | `hello world` |
+以下语法适用于所有支持随机词的节点。
+
+| 语法 | 说明 | 示例输入 | 可能输出 |
+|------|------|----------|----------|
+| `{a\|b}` | 随机选 1 个 | `{红\|蓝}` | `红` 或 `蓝` |
+| `{N\$\$ a\|b\|c}` | 随机选 N 个 | `{2\$\$ 猫\|狗\|鸟}` | `猫,狗` 等 |
+| 无语法 | 原样输出 | `hello world` | `hello world` |
+
+> 支持混合：`{红\|蓝}色的{猫\|狗}` → `红色的狗` 等
+> N 超过选项数时控制台输出警告并自动限制
 
 ## 依赖
 
-无额外依赖，仅使用 Python 标准库（`re`, `random`）。
+Python 标准库（`re`、`random`），无需额外安装。
 
-## 许可
+## License
 
 MIT
