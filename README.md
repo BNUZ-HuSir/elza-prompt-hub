@@ -92,11 +92,6 @@ Elza 的 ComfyUI 自定义节点集。
 > 支持混合：`{红\|蓝}色的{猫\|狗}` → `红色的狗` 等
 > N 超过选项数时控制台输出警告并自动限制
 
-## 依赖
-
-- `pyyaml >= 6.0`（词库存储）
-- Python 标准库（`re`、`random`、`json`）
-
 ## License
 
 本项目基于 [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) 许可。
