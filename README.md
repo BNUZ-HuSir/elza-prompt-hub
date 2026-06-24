@@ -4,9 +4,7 @@ Elza 的 ComfyUI 自定义节点集。
 
 ## 安装
 
-1. 从 [Releases](https://github.com/BNUZ-HuSir/elza-prompt-hub/releases) 下载 zip
-2. 解压到 `ComfyUI/custom_nodes/elza-prompt-hub/`
-3. 安装依赖：`pip install pyyaml`
+从 [Releases](https://github.com/BNUZ-HuSir/elza-prompt-hub/releases) 下载 zip，解压到 `ComfyUI/custom_nodes/elza-prompt-hub/`，重启 ComfyUI 即可。
 
 ## 节点
 
