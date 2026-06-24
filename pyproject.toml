@@ -1,12 +1,15 @@
 [project]
 name = "elza-prompt-hub"
-description = "多栏预设词切换节点，支持 {a|b} 和 {N$$ a|b|c} 随机词语法"
-version = "1.0.0"
-license = { text = "MIT" }
+description = "Elza 的 ComfyUI 自定义节点集：多栏预设词切换 + 词库管理"
+version = "1.1.0"
+license = { text = "CC BY-NC 4.0" }
 requires-python = ">=3.10"
+dependencies = [
+    "pyyaml>=6.0",
+]
 
 [project.urls]
-Repository = "https://github.com/user/elza-prompt-hub"
+Repository = "https://github.com/BNUZ-HuSir/elza-prompt-hub"
 
 [tool.comfy]
 PublisherId = "elza"
