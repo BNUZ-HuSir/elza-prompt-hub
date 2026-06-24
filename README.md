@@ -4,7 +4,9 @@ Elza 的 ComfyUI 自定义节点集。
 
 ## 安装
 
-从 [Releases](https://github.com/BNUZ-HuSir/elza-prompt-hub/releases) 下载 zip，解压到 `ComfyUI/custom_nodes/elza-prompt-hub/`。
+1. 从 [Releases](https://github.com/BNUZ-HuSir/elza-prompt-hub/releases) 下载 zip
+2. 解压到 `ComfyUI/custom_nodes/elza-prompt-hub/`
+3. 安装依赖：`pip install pyyaml`
 
 ## 节点
 
@@ -35,6 +37,45 @@ Elza 的 ComfyUI 自定义节点集。
 3. 在各框中填入预设词
 4. 切换 `index` 选择当前生效的预设
 
+---
+
+### Prompt Bank
+
+词库管理节点。通过弹窗浏览、选择、管理词条，与额外提示词拼接输出。
+
+**输入**
+
+| 参数 | 说明 | 限制 |
+|------|------|------|
+| text_display | 已选词条展示（只读） | — |
+| extra_prompt | 额外提示词（多行） | — |
+
+**输出**
+
+| 名称 | 说明 |
+|------|------|
+| text | 已选词 + 额外提示词拼接 |
+
+**使用**
+
+1. 右键菜单 → `Elza/prompt` → `Elza Prompt Bank`
+2. 点 `📋 打开词库` 打开弹窗
+3. 左侧分类树浏览，中栏点击词条选择
+4. 确认后词条展示在节点上
+5. 在 `extra_prompt` 中输入额外文本
+6. Queue 执行 → 输出拼接结果
+
+**弹窗功能**
+
+| 功能 | 说明 |
+|------|------|
+| 分类管理 | 一/二级分类，增删改 |
+| 词条管理 | 中英文词条，增删改 |
+| 查重高亮 | 中栏已选词条高亮 |
+| 即时入库 | CRUD 操作立即写入 YAML |
+
+---
+
 ## 随机词语法
 
 以下语法适用于所有支持随机词的节点。
@@ -50,7 +91,8 @@ Elza 的 ComfyUI 自定义节点集。
 
 ## 依赖
 
-Python 标准库（`re`、`random`），无需额外安装。
+- `pyyaml >= 6.0`（词库存储）
+- Python 标准库（`re`、`random`、`json`）
 
 ## License
 
