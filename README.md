@@ -4,7 +4,7 @@ Elza 的 ComfyUI 自定义节点集。
 
 ## 安装
 
-从 [Releases](https://github.com/BNUZ-HuSir/elza-prompt-hub/releases) 下载 zip，解压到 `ComfyUI/custom_nodes/elza-prompt-hub/`，重启 ComfyUI 即可。
+从 [Releases](https://github.com/BNUZ-HuSir/elza-prompt-hub/releases) 下载 zip，解压到custom_nodes文件夹，重启 ComfyUI 即可。
 
 ## 节点
 
@@ -40,6 +40,11 @@ Elza 的 ComfyUI 自定义节点集。
 ### Prompt Bank
 
 词库管理节点。通过弹窗浏览、选择、管理词条，与额外提示词拼接输出。
+<img width="1082" height="447" alt="image" src="https://github.com/user-attachments/assets/ae1f3a58-5633-46ff-b385-3fae2412f629" />
+
+<img width="2129" height="1111" alt="image" src="https://github.com/user-attachments/assets/9a60f14f-be93-40e6-9ee1-cf4d05d5cc6e" />
+
+<img width="2129" height="1111" alt="image" src="https://github.com/user-attachments/assets/2d5b9d83-4fd1-45c7-bee7-a61f1af10941" />
 
 **输入**
 
