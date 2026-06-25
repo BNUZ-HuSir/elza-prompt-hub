@@ -45,8 +45,59 @@ try:
         except Exception as e:
             return web.json_response({"success": False, "error": str(e)})
 
+    @PromptServer.instance.routes.post("/elza/wordbank/export")
+    async def _elza_wordbank_export(request):
+        """接收前端传来的词库数据，用 yaml.dump 序列化后返回，
+           保证和 load_wordbank() 使用同一套 YAML 规则。"""
+        try:
+            body = await request.json()
+            data = body.get("data", {})
+            yaml_str = yaml.dump(
+                data, allow_unicode=True, sort_keys=False,
+                default_flow_style=False,
+            )
+            return web.Response(
+                body=yaml_str.encode("utf-8"),
+                content_type="application/x-yaml",
+            )
+        except Exception as e:
+            return web.json_response({"success": False, "error": str(e)})
+
 except ImportError:
     pass  # ComfyUI 环境未就绪时不注册路由
+
+
+# ── 随机语法解析（公共函数）────────────────────────────────
+def parse_dynamic(text):
+    """解析 {a|b} 和 {N$$ a|b|c} 随机语法，供所有节点复用。"""
+    def _replace(match: re.Match) -> str:
+        content = match.group(1)
+
+        # 检测 "N$$" 前缀：{2$$ a|b|c}
+        n_match = re.match(r'(\d+)\$\$\s*(.+)', content)
+        if n_match:
+            n = int(n_match.group(1))
+            opts_str = n_match.group(2)
+        else:
+            n = 1
+            opts_str = content
+
+        # 按 | 拆分并清洗
+        opts = [o.strip() for o in opts_str.split('|') if o.strip()]
+        if not opts:
+            return ''
+
+        # 超过选项数时输出警告
+        if n > len(opts):
+            print(f"[Elza PromptHub] ⚠ {n}$$ 超出选项数量 ({len(opts)})，已自动限制为 {len(opts)}：{{{content}}}")
+            n = len(opts)
+        # 随机选取 N 个索引，排序后按原顺序取值
+        indices = random.sample(range(len(opts)), n)
+        indices.sort()
+        chosen = [opts[i] for i in indices]
+        return ','.join(chosen)
+
+    return re.sub(r'\{([^}]+)\}', _replace, text)
 
 
 class ElzaPromptHub_PromptSwitch:
@@ -139,35 +190,7 @@ class ElzaPromptHub_PromptSwitch:
 
     @staticmethod
     def _parse_dynamic(text):
-        """解析 {a|b} 和 {N$$ a|b|c} 随机语法。"""
-        def _replace(match: re.Match) -> str:
-            content = match.group(1)
-
-            # 检测 "N$$" 前缀：{2$$ a|b|c}
-            n_match = re.match(r'(\d+)\$\$\s*(.+)', content)
-            if n_match:
-                n = int(n_match.group(1))
-                opts_str = n_match.group(2)
-            else:
-                n = 1
-                opts_str = content
-
-            # 按 | 拆分并清洗
-            opts = [o.strip() for o in opts_str.split('|') if o.strip()]
-            if not opts:
-                return ''
-
-            # 超过选项数时输出警告
-            if n > len(opts):
-                print(f"[Elza PromptHub] ⚠ {n}$$ 超出选项数量 ({len(opts)})，已自动限制为 {len(opts)}：{{{content}}}")
-                n = len(opts)
-            # 随机选取 N 个索引，排序后按原顺序取值
-            indices = random.sample(range(len(opts)), n)
-            indices.sort()
-            chosen = [opts[i] for i in indices]
-            return ','.join(chosen)
-
-        return re.sub(r'\{([^}]+)\}', _replace, text)
+        return parse_dynamic(text)
 
 
 # ==================================================================
@@ -251,7 +274,8 @@ class ElzaPromptHub_PromptBank:
         if parsed_tags:
             parts.append(",".join(parsed_tags))
         if extra_prompt:
-            parts.append(extra_prompt)
+            # PB-09: extra_prompt 也支持随机语法 {a|b} / {N$$ a|b|c}
+            parts.append(parse_dynamic(extra_prompt))
         result = ",".join(parts) if parts else ""
         
         return {"result": (result,)}

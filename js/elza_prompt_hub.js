@@ -19,6 +19,12 @@ const _BANK_STYLES = `
 .elza-wb-header .elza-wb-close{background:none;border:none;color:#aaa;
     font-size:18px;cursor:pointer;padding:0 4px;}
 .elza-wb-header .elza-wb-close:hover{color:#f55;}
+.elza-wb-header .elza-wb-export-btn{padding:4px 10px;border:1px solid #444;
+    background:#2a2a2a;color:#aaa;border-radius:4px;cursor:pointer;font-size:12px;}
+.elza-wb-header .elza-wb-export-btn:hover{background:#3a5a3a;border-color:#5a8a5a;color:#cfc;}
+.elza-wb-header .elza-wb-import-btn{padding:4px 10px;border:1px solid #444;
+    background:#2a2a2a;color:#aaa;border-radius:4px;cursor:pointer;font-size:12px;}
+.elza-wb-header .elza-wb-import-btn:hover{background:#3a3a5a;border-color:#5a5a8a;color:#ccf;}
 
 .elza-wb-body{display:flex;flex:1;overflow:hidden;}
 
@@ -121,6 +127,7 @@ const _BANK_HTML = `
   <div class="elza-wb-dialog">
     <div class="elza-wb-header">
       <span class="elza-wb-title">📚 词库</span>
+      <button class="elza-wb-export-btn" title="导出词库为 YAML 文件">⬇ 导出</button>
       <span class="elza-wb-subtitle">Elza Prompt Bank</span>
       <button class="elza-wb-close">✕</button>
     </div>
@@ -216,6 +223,10 @@ class ElzaWordBankDialog {
             if (e.target === this._overlay) this.cancel();
         });
 
+        // 导出/导入按钮
+        const exportBtn = this._overlay.querySelector(".elza-wb-export-btn");
+        if (exportBtn) exportBtn.onclick = () => this._exportYaml();
+
         // 分类按钮
         this._btnCat1.onclick = () => this._showCatForm(null);
         this._btnCat2.onclick = () => {
@@ -282,8 +293,10 @@ class ElzaWordBankDialog {
             for (const f of fields) {
                 if (!values[f.label]) { alert(`${f.label} 不能为空`); return; }
             }
-            this._hideForm();
-            onOk(values);
+            // onOk 返回 false 时保留表单，让用户修改
+            if (onOk(values) !== false) {
+                this._hideForm();
+            }
         };
         // 回车确认
         mask.addEventListener("keydown", (e) => {
@@ -314,12 +327,12 @@ class ElzaWordBankDialog {
         ], (vals) => {
             const name = vals["分类名"];
             if (isCat1) {
-                if (this.data[name]) { alert("分类名已存在"); return; }
+                if (this.data[name]) { alert("分类名已存在"); return false; }
                 this.data[name] = {};
                 this.selCat1 = name;
                 this.selCat2 = null;
             } else {
-                if (this.data[parentCat1][name] !== undefined) { alert("分类名已存在"); return; }
+                if (this.data[parentCat1][name] !== undefined) { alert("分类名已存在"); return false; }
                 this.data[parentCat1][name] = [];
                 this.selCat1 = parentCat1;
                 this.selCat2 = name;
@@ -343,11 +356,27 @@ class ElzaWordBankDialog {
             const tags = this.data[this.selCat1][this.selCat2];
             if (isEdit) {
                 const oldZh = editInfo.zh, oldEn = editInfo.en;
+                // 查重：排除自身，检查是否与同分类其他 tag 冲突
+                const dupZh = tags.some((t, i) => i !== editInfo.idx && t.startsWith(`${zh}|`));
+                const dupEn = tags.some((t, i) => i !== editInfo.idx && t.endsWith(`|${en}`));
+                if (dupZh) { alert(`中文「${zh}」已存在，请换一个`); return false; }
+                if (dupEn) { alert(`英文「${en}」已存在，请换一个`); return false; }
                 tags[editInfo.idx] = `${zh}|${en}`;
                 // 同步已选
                 const si = this.selectedTags.findIndex(t => t.zh === oldZh && t.en === oldEn);
                 if (si >= 0) { this.selectedTags[si] = { zh, en }; }
             } else {
+                // 查重：同一二级分类下，中文或英文重复均拦截
+                const dupZh = tags.some(t => {
+                    const m = t.match(/^([^|]*)\|/);
+                    return m && m[1] === zh;
+                });
+                const dupEn = tags.some(t => {
+                    const m = t.match(/\|(.*)$/);
+                    return m && m[1] === en;
+                });
+                if (dupZh) { alert(`中文「${zh}」已存在，请换一个`); return false; }
+                if (dupEn) { alert(`英文「${en}」已存在，请换一个`); return false; }
                 tags.push(`${zh}|${en}`);
             }
             this.modified = true;
@@ -394,6 +423,34 @@ class ElzaWordBankDialog {
         }
     }
 
+    // ── 导出 YAML ──────────────────────────────────────────
+    async _exportYaml() {
+        // 将内存数据交给后端，由 yaml.dump 序列化，保证和
+        // load_wordbank() 使用完全相同的 YAML 规则。
+        try {
+            const r = await fetch("/elza/wordbank/export", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ data: this.data }),
+            });
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            const yamlStr = await r.text();
+
+            const blob = new Blob([yamlStr], { type: "application/x-yaml" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "wordbank.yaml";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            alert("导出失败: " + (e.message || "网络异常"));
+            console.error("[Elza PromptHub] 导出失败:", e);
+        }
+    }
+
     // ── 左栏：分类树 ──────────────────────────────────────
     _renderTree() {
         const el = this._treeEl;
@@ -425,11 +482,23 @@ class ElzaWordBankDialog {
 
         div.onclick = () => {
             if (level === 0) {
-                this.selCat1 = (this.selCat1 === name) ? null : name;
-                this.selCat2 = null;
+                // 点击已选中的一级 → 取消所有选中；否则选中该一级
+                if (this.selCat1 === name && this.selCat2 === null) {
+                    this.selCat1 = null;
+                    this.selCat2 = null;
+                } else {
+                    this.selCat1 = name;
+                    this.selCat2 = null;
+                }
             } else {
-                this.selCat1 = parentCat1;
-                this.selCat2 = (this.selCat2 === name) ? null : name;
+                // 点击已选中的二级 → 改为只选中其一级；否则选中该二级
+                if (this.selCat2 === name) {
+                    this.selCat1 = parentCat1;
+                    this.selCat2 = null;
+                } else {
+                    this.selCat1 = parentCat1;
+                    this.selCat2 = name;
+                }
             }
             this._renderTree();
             this._renderTags();
@@ -564,7 +633,7 @@ class ElzaWordBankDialog {
         ], (vals) => {
             const n = vals["分类名"];
             if (n === oldName) return;
-            if (this.data[n]) { alert("分类名已存在"); return; }
+            if (this.data[n]) { alert("分类名已存在"); return false; }
             this.data[n] = this.data[oldName];
             delete this.data[oldName];
             if (this.selCat1 === oldName) this.selCat1 = n;
@@ -580,8 +649,8 @@ class ElzaWordBankDialog {
             { label: "分类名", value: oldName, maxlength: 8, placeholder: "不超过 8 字符" },
         ], (vals) => {
             const n = vals["分类名"];
-            if (n === oldName) return;
-            if (this.data[cat1][n] !== undefined) { alert("分类名已存在"); return; }
+            if (n === oldName) return false;
+            if (this.data[cat1][n] !== undefined) { alert("分类名已存在"); return false; }
             this.data[cat1][n] = this.data[cat1][oldName];
             delete this.data[cat1][oldName];
             if (this.selCat2 === oldName) this.selCat2 = n;
