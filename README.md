@@ -4,7 +4,9 @@ Elza 的 ComfyUI 自定义节点集。
 
 ## 安装
 
-从 [Releases](https://github.com/BNUZ-HuSir/elza-prompt-hub/releases) 下载 zip，解压到custom_nodes文件夹，重启 ComfyUI 即可。
+从 [Releases](https://github.com/BNUZ-HuSir/elza-prompt-hub/releases) 下载 zip，解压到 `ComfyUI/custom_nodes/elza-prompt-hub/`。
+
+将 `wordbank-example.yaml` 复制一份并改名为 `wordbank.yaml`，然后重启 ComfyUI。
 
 ## 节点
 
@@ -46,12 +48,14 @@ Elza 的 ComfyUI 自定义节点集。
 
 <img width="2129" height="1111" alt="image" src="https://github.com/user-attachments/assets/2d5b9d83-4fd1-45c7-bee7-a61f1af10941" />
 
+> 使用前需将 `wordbank-example.yaml` 复制为 `wordbank.yaml`。
+
 **输入**
 
 | 参数 | 说明 | 限制 |
 |------|------|------|
 | text_display | 已选词条展示（只读） | — |
-| extra_prompt | 额外提示词（多行） | — |
+| extra_prompt | 额外提示词（多行），支持随机语法 | — |
 
 **输出**
 
