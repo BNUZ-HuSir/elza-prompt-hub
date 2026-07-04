@@ -1,4 +1,4 @@
-import { app } from "../../scripts/app.js";
+﻿import { app } from "../../scripts/app.js";
 import { ComfyWidgets } from "../../scripts/widgets.js";
 
 const MAX_PROMPTS = 99;
@@ -25,12 +25,19 @@ const _BANK_STYLES = `
 .elza-wb-header .elza-wb-import-btn{padding:4px 10px;border:1px solid #444;
     background:#2a2a2a;color:#aaa;border-radius:4px;cursor:pointer;font-size:12px;}
 .elza-wb-header .elza-wb-import-btn:hover{background:#3a3a5a;border-color:#5a5a8a;color:#ccf;}
+.elza-wb-header .elza-wb-search{width:170px;padding:4px 10px;background:#1a1a1a;
+    border:1px solid #444;border-radius:4px;color:#ddd;font-size:12px;outline:none;}
+.elza-wb-header .elza-wb-search:focus{border-color:#5a8aca;}
+.elza-wb-header .elza-wb-search::placeholder{color:#666;}
 
 .elza-wb-body{display:flex;flex:1;overflow:hidden;}
 
 /* 左栏 */
 .elza-wb-left{width:200px;border-right:1px solid #333;display:flex;
     flex-direction:column;padding:8px;gap:6px;}
+.elza-wb-left.disabled{opacity:0.35;}
+.elza-wb-left.disabled .elza-wb-btns{pointer-events:none;}
+.elza-wb-left.disabled .elza-cat-item{cursor:default;}
 .elza-wb-left .elza-wb-btns{display:flex;gap:4px;}
 .elza-wb-left .elza-wb-btns button{flex:1;padding:5px 0;border:1px solid #444;
     background:#2a2a2a;color:#aaa;border-radius:4px;cursor:pointer;font-size:12px;}
@@ -59,6 +66,7 @@ const _BANK_STYLES = `
     display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;}
 .elza-wb-middle .elza-tag-item.elza-small-text .elza-tag-en{font-size:11px;}
 .elza-wb-middle .elza-tag-item.elza-small-text .elza-tag-zh{font-size:10px;}
+.elza-wb-middle .elza-search-empty{color:#666;padding:40px 20px;text-align:center;grid-column:1/-1;}
 
 /* 右栏 */
 .elza-wb-right{width:240px;border-left:1px solid #333;padding:8px;
@@ -75,6 +83,10 @@ const _BANK_STYLES = `
 .elza-wb-right .elza-sel-tag .elza-sel-x{cursor:pointer;color:#888;
     font-size:16px;line-height:1;padding:0 4px;flex-shrink:0;}
 .elza-wb-right .elza-sel-tag .elza-sel-x:hover{color:#f55;}
+	.elza-wb-right .elza-sel-wt{width:42px;padding:2px 3px;background:#1a1a1a;
+	    border:1px solid #444;border-radius:3px;color:#ddd;font-size:11px;
+	    text-align:center;outline:none;flex-shrink:0;}
+	.elza-wb-right .elza-sel-wt:focus{border-color:#5a8aca;}
 
 /* 表单面板 */
 .elza-wb-form-mask{position:absolute;inset:0;background:rgba(0,0,0,.5);
@@ -127,7 +139,9 @@ const _BANK_HTML = `
   <div class="elza-wb-dialog">
     <div class="elza-wb-header">
       <span class="elza-wb-title">📚 词库</span>
-      <button class="elza-wb-export-btn" title="导出词库为 YAML 文件">⬇ 导出</button>
+      <input class="elza-wb-search" type="text" placeholder="🔍 搜索Tag...">
+      <button class="elza-wb-import-btn" title="从 YAML 文件导入词库">📥 导入</button>
+      <button class="elza-wb-export-btn" title="导出词库为 YAML 文件">📤 导出</button>
       <span class="elza-wb-subtitle">Elza Prompt Bank</span>
       <button class="elza-wb-close">✕</button>
     </div>
@@ -170,6 +184,8 @@ class ElzaWordBankDialog {
         this.modified = false;
         this._ctxMenu = null;
         this._saving = false;
+        this.searchTerm = "";
+        this._searchTimer = null;
 
         // 注入样式
         if (!document.getElementById("elza-wb-styles")) {
@@ -223,9 +239,27 @@ class ElzaWordBankDialog {
             if (e.target === this._overlay) this.cancel();
         });
 
+        // 搜索框
+        this._searchEl = this._overlay.querySelector(".elza-wb-search");
+        if (this._searchEl) {
+            this._searchEl.oninput = () => {
+                clearTimeout(this._searchTimer);
+                this._searchTimer = setTimeout(() => {
+                    this.searchTerm = this._searchEl.value.trim();
+                    this._applySearch();
+                }, 200);
+            };
+            // ESC 立即清空搜索
+            this._searchEl.onkeydown = (e) => {
+                if (e.key === "Escape") { clearTimeout(this._searchTimer); this._searchEl.value = ""; this.searchTerm = ""; this._applySearch(); }
+            };
+        }
+
         // 导出/导入按钮
         const exportBtn = this._overlay.querySelector(".elza-wb-export-btn");
         if (exportBtn) exportBtn.onclick = () => this._exportYaml();
+        const importBtn = this._overlay.querySelector(".elza-wb-import-btn");
+        if (importBtn) importBtn.onclick = () => this._importYaml();
 
         // 分类按钮
         this._btnCat1.onclick = () => this._showCatForm(null);
@@ -423,6 +457,25 @@ class ElzaWordBankDialog {
         }
     }
 
+    // ── 搜索 ──────────────────────────────────────────────
+    _applySearch() {
+        const body = this._dialogEl.querySelector(".elza-wb-body");
+        const left = body.querySelector(".elza-wb-left");
+        if (this.searchTerm) {
+            left.classList.add("disabled");
+        } else {
+            left.classList.remove("disabled");
+        }
+        this._renderTags();
+        this._renderTree();
+    }
+
+    // ── 导入 YAML（占位）──────────────────────────────────
+    _importYaml() {
+        // TODO: PB-26 导入逻辑待定
+        alert("导入功能开发中，敬请期待~");
+    }
+
     // ── 导出 YAML ──────────────────────────────────────────
     async _exportYaml() {
         // 将内存数据交给后端，由 yaml.dump 序列化，保证和
@@ -455,7 +508,7 @@ class ElzaWordBankDialog {
     _renderTree() {
         const el = this._treeEl;
         el.innerHTML = "";
-        const cats = Object.keys(this.data).sort();
+        const cats = Object.keys(this.data);
         for (const cat1 of cats) {
             const isExpanded = (cat1 === this.selCat1);
             // 选中二级时，一级不显示高亮
@@ -463,7 +516,7 @@ class ElzaWordBankDialog {
             el.appendChild(this._catEl(cat1, 0, isSel1, null));
 
             if (isExpanded) {
-                const subs = Object.keys(this.data[cat1] || {}).sort();
+                const subs = Object.keys(this.data[cat1] || {});
                 for (const cat2 of subs) {
                     const isSel2 = (cat2 === this.selCat2);
                     el.appendChild(this._catEl(cat2, 1, isSel2, cat1));
@@ -481,6 +534,13 @@ class ElzaWordBankDialog {
             : `<span style="color:#555;margin-right:2px;">├</span><span>${name}</span>`;
 
         div.onclick = () => {
+            // 搜索中点击分类 → 清空搜索状态 + 移除 disabled
+            if (this.searchTerm) {
+                this.searchTerm = "";
+                if (this._searchEl) this._searchEl.value = "";
+                const left = this._dialogEl.querySelector(".elza-wb-body .elza-wb-left");
+                if (left) left.classList.remove("disabled");
+            }
             if (level === 0) {
                 // 点击已选中的一级 → 取消所有选中；否则选中该一级
                 if (this.selCat1 === name && this.selCat2 === null) {
@@ -542,6 +602,42 @@ class ElzaWordBankDialog {
     _renderTags() {
         const el = this._midEl;
         el.innerHTML = "";
+
+        // ── 搜索模式：跨所有分类匹配 tag ──
+        if (this.searchTerm) {
+            const term = this.searchTerm.toLowerCase();
+            const MAX_RESULTS = 500;
+            let found = 0;
+            let capped = false;
+            for (const cat1 of Object.keys(this.data)) {
+                if (capped) break;
+                for (const cat2 of Object.keys(this.data[cat1] || {})) {
+                    if (capped) break;
+                    const tags = this.data[cat1][cat2] || [];
+                    for (let i = 0; i < tags.length; i++) {
+                        const raw = tags[i];
+                        const m = raw.match(/^([^|]*)\|(.*)$/) || [null, raw, raw];
+                        const zh = m[1], en = m[2];
+                        if (zh.toLowerCase().includes(term) || en.toLowerCase().includes(term)) {
+                            if (found >= MAX_RESULTS) { capped = true; break; }
+                            el.appendChild(this._tagEl(raw, i));
+                            found++;
+                        }
+                    }
+                }
+            }
+            if (found === 0) {
+                el.innerHTML = '<div class="elza-search-empty">😕 无匹配结果</div>';
+            } else if (capped) {
+                const hint = document.createElement("div");
+                hint.className = "elza-search-empty";
+                hint.textContent = `仅显示前 ${MAX_RESULTS} 条，请缩小关键词范围`;
+                el.appendChild(hint);
+            }
+            return;
+        }
+
+        // ── 正常模式 ──
         if (!this.selCat1 || !this.selCat2) {
             el.innerHTML = '<div style="color:#666;padding:20px;">请选择二级分类查看词条</div>';
             return;
@@ -580,6 +676,7 @@ class ElzaWordBankDialog {
 
         div.onclick = () => this._toggleTag(zh, en);
         div.oncontextmenu = (e) => {
+            if (this.searchTerm) return; // 搜索模式不触发右键菜单
             e.preventDefault(); e.stopPropagation();
             this._showCtxMenu(e.clientX, e.clientY, [
                 { label: "✎ 编辑", action: () => this._showTagForm({ zh, en, idx }) },
@@ -607,7 +704,9 @@ class ElzaWordBankDialog {
         const el = this._selList;
         el.innerHTML = "";
         for (let i = 0; i < this.selectedTags.length; i++) {
-            const { zh, en } = this.selectedTags[i];
+            const tag = this.selectedTags[i];
+            const { zh, en } = tag;
+            if (tag.weight === undefined) tag.weight = 1.0;
             const div = document.createElement("div");
             div.className = "elza-sel-tag";
             div.innerHTML = `
@@ -615,10 +714,20 @@ class ElzaWordBankDialog {
                 <div class="elza-sel-en">${en}</div>
                 <div class="elza-sel-zh">${zh}</div>
               </div>
-              <span class="elza-sel-x" data-idx="${i}">✕</span>`;
+              <input class="elza-sel-wt" type="number" value="${tag.weight}"
+                step="0.1" min="0" title="权重">
+              <span class="elza-sel-x">✕</span>`;
+            // 权重输入
+            const wtInput = div.querySelector(".elza-sel-wt");
+            wtInput.addEventListener("input", () => {
+                const v = parseFloat(wtInput.value);
+                tag.weight = isNaN(v) ? 1.0 : v;
+            });
+            wtInput.addEventListener("click", (e) => e.stopPropagation());
+            // 删除（按值匹配，不用 index）
             div.querySelector(".elza-sel-x").onclick = (e) => {
                 e.stopPropagation();
-                this.selectedTags.splice(i, 1);
+                this.selectedTags = this.selectedTags.filter(t => !(t.zh === zh && t.en === en));
                 this._renderTags();
                 this._renderSelected();
             };
@@ -731,7 +840,10 @@ class ElzaWordBankDialog {
         // 写入静态的 text_display widget（用于展示）
         const displayW = this.node.widgets.find(w => w.name === "text_display");
         if (displayW) {
-            const displayEnStr = this.selectedTags.map(t => t.en).join(",");
+            const displayEnStr = this.selectedTags.map(t => {
+                const w = t.weight || 1.0;
+                return w === 1.0 ? t.en : `(${t.en}:${w})`;
+            }).join(",");
             displayW.value = displayEnStr ? displayEnStr : "(空)";
         }
 
@@ -745,6 +857,7 @@ class ElzaWordBankDialog {
     }
 
     destroy() {
+        clearTimeout(this._searchTimer);
         if (this._overlay) { this._overlay.remove(); this._overlay = null; }
         this._hideCtxMenu();
         this._hideLoading();

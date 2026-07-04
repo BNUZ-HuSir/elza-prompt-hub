@@ -82,8 +82,8 @@ def parse_dynamic(text):
             n = 1
             opts_str = content
 
-        # 按 | 拆分并清洗
-        opts = [o.strip() for o in opts_str.split('|') if o.strip()]
+        # 按 | 拆分（保留空选项，空 option = 输出空）
+        opts = [o.strip() for o in opts_str.split('|')]
         if not opts:
             return ''
 
@@ -261,18 +261,25 @@ class ElzaPromptHub_PromptBank:
         try:
             tags_data = json.loads(selected_tags_json)
             if isinstance(tags_data, list) and len(tags_data) > 0:
-                parsed_tags = [item.get("en", "") for item in tags_data if isinstance(item, dict) and item.get("en")]
-        except json.JSONDecodeError:
+                parsed_tags = [
+                    {"en": item.get("en", ""), "weight": float(item.get("weight", 1.0))}
+                    for item in tags_data if isinstance(item, dict) and item.get("en")
+                ]
+        except (json.JSONDecodeError, ValueError):
             pass
 
         # 兜底机制：如果在后台 workflow.properties 里找不到（可能是因为 API 执行或者格式差异）
         # 但是前端的 text_display 有值且不是 "(空)"，说明前端是有数据的，我们直接用前端传来的值！
         if not parsed_tags and text_display and text_display != "(空)":
-            parsed_tags = [text_display]
+            parsed_tags = [{"en": text_display, "weight": 1.0}]
 
         parts = []
         if parsed_tags:
-            parts.append(",".join(parsed_tags))
+            # 权重为 1.0 时裸输出 tag，否则输出 (tag:weight)
+            parts.append(",".join(
+                t['en'] if t['weight'] == 1.0 else f"({t['en']}:{t['weight']})"
+                for t in parsed_tags
+            ))
         if extra_prompt:
             # PB-09: extra_prompt 也支持随机语法 {a|b} / {N$$ a|b|c}
             parts.append(parse_dynamic(extra_prompt))
