@@ -3,3 +3,9 @@ __pycache__/
 .DS_Store
 *.comfyignore
 wordbank.yaml
+debug.log
+wordbanks/promptbank/*.yaml
+wordbanks/promptmixer/*.yaml
+wordbanks/*/.external-user-data-migrated-v1
+!wordbanks/promptbank/.gitkeep
+!wordbanks/promptmixer/.gitkeep

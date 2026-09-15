@@ -1,7 +1,7 @@
 [project]
 name = "elza-prompt-hub"
-description = "Elza 的 ComfyUI 自定义节点集：多栏预设词切换 + 词库管理"
-version = "0.1.1-beta"
+description = "Elza 的 ComfyUI Prompt Switch、Join、Bank、Mix 与随机语法节点集"
+version = "0.2.0-alpha.18"
 license = { text = "CC BY-NC 4.0" }
 requires-python = ">=3.10"
 dependencies = [

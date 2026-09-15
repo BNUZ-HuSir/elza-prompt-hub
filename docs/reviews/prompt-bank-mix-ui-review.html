@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Elza Prompt Hub · Bank / Mix UI Review</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0d0f13;
+      --canvas: #12151b;
+      --surface: #191d24;
+      --surface-2: #20252e;
+      --surface-3: #282e38;
+      --line: #343b47;
+      --line-soft: #292f39;
+      --text: #eef1f6;
+      --muted: #9aa3b2;
+      --dim: #707989;
+      --primary: #8b7cf6;
+      --primary-2: #6f61db;
+      --primary-soft: rgba(139, 124, 246, .15);
+      --cyan: #52b9cb;
+      --success: #55bd89;
+      --warning: #e6af56;
+      --danger: #e06c75;
+      --shadow: 0 28px 80px rgba(0, 0, 0, .48);
+      --radius: 10px;
+      --radius-sm: 7px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      min-width: 1120px;
+      background:
+        linear-gradient(rgba(255,255,255,.022) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.022) 1px, transparent 1px),
+        var(--canvas);
+      background-size: 24px 24px;
+      color: var(--text);
+      font: 14px/1.45 Inter, "Segoe UI", "Microsoft YaHei", sans-serif;
+    }
+
+    button, input, select, textarea { font: inherit; }
+    button { color: inherit; }
+    button, [role="button"] { cursor: pointer; }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+    button:disabled { cursor: not-allowed; opacity: .42; }
+
+    .icon { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
+    .icon-lg { width: 20px; height: 20px; }
+
+    .review-bar {
+      height: 58px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: rgba(15, 18, 23, .95);
+      border-bottom: 1px solid var(--line-soft);
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      backdrop-filter: blur(12px);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 270px; }
+    .brand-mark {
+      width: 32px; height: 32px; border-radius: 9px;
+      display: grid; place-items: center;
+      background: linear-gradient(145deg, #9a8bff, #5c50c2);
+      box-shadow: 0 7px 20px rgba(115, 99, 222, .3);
+      font-weight: 800; letter-spacing: -.04em;
+    }
+    .brand strong { font-size: 15px; }
+    .brand small { color: var(--muted); display: block; font-size: 11px; }
+
+    .review-tabs { display: flex; gap: 4px; padding: 4px; border-radius: 9px; background: var(--surface); border: 1px solid var(--line-soft); }
+    .review-tab {
+      border: 0; background: transparent; color: var(--muted);
+      padding: 7px 14px; border-radius: 6px; font-weight: 650;
+    }
+    .review-tab.active { background: var(--surface-3); color: var(--text); box-shadow: inset 0 0 0 1px rgba(255,255,255,.05); }
+    .review-spacer { flex: 1; }
+    .review-note { color: var(--muted); font-size: 12px; display: flex; gap: 7px; align-items: center; }
+    .safe-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 10px rgba(85,189,137,.55); }
+
+    .btn {
+      min-height: 36px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: var(--surface-2);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      transition: background .16s ease, border-color .16s ease, color .16s ease;
+      white-space: nowrap;
+    }
+    .btn:hover { background: var(--surface-3); border-color: #48515f; }
+    .btn.primary { background: var(--primary-2); border-color: #8d81ee; color: #fff; font-weight: 700; }
+    .btn.primary:hover { background: #7b6ee4; }
+    .btn.ghost { background: transparent; border-color: transparent; color: var(--muted); }
+    .btn.ghost:hover { color: var(--text); background: var(--surface-2); }
+    .btn.danger { color: #ffb2b7; border-color: rgba(224,108,117,.35); background: rgba(224,108,117,.08); }
+    .btn.icon-only { width: 36px; padding: 0; }
+    .btn.small { min-height: 30px; padding: 0 9px; font-size: 12px; }
+
+    .workspace { padding: 26px 28px 44px; }
+    .scene { display: none; }
+    .scene.active { display: block; }
+    .scene-layout { display: grid; grid-template-columns: 280px minmax(800px, 1fr); gap: 24px; align-items: start; max-width: 1580px; margin: 0 auto; }
+
+    .side-column { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 84px; }
+    .canvas-label { color: var(--dim); font: 11px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .08em; text-transform: uppercase; }
+    .node {
+      border-radius: 9px;
+      background: #1b1d22;
+      border: 1px solid #090a0c;
+      box-shadow: 0 14px 38px rgba(0,0,0,.42), inset 0 0 0 1px rgba(255,255,255,.045);
+      overflow: hidden;
+    }
+    .node-title { height: 34px; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; font-weight: 700; background: linear-gradient(90deg, #5d50b3, #493f83); }
+    .node-id { font: 11px ui-monospace, monospace; opacity: .7; }
+    .node-body { padding: 11px; display: grid; gap: 10px; }
+    .node-btn { width: 100%; min-height: 34px; border: 1px solid #494f5a; border-radius: 5px; background: #282c33; color: #e5e7ec; font-weight: 650; }
+    .node-btn:hover { background: #343944; }
+    .node-field label { display: flex; justify-content: space-between; color: #c4c8d0; font-size: 12px; margin-bottom: 5px; }
+    .node-input {
+      width: 100%; min-height: 62px; resize: vertical; border-radius: 5px; border: 1px solid #3d424c; background: #121419; color: #d8dbe1; padding: 8px; font-size: 12px;
+    }
+    .node-line { position: relative; display: grid; grid-template-columns: 1fr 48px; gap: 7px; align-items: center; }
+    .node-line::before { content: ""; position: absolute; left: -17px; width: 9px; height: 9px; border-radius: 50%; border: 2px solid #76b9e8; background: #14171c; }
+    .node-mini { min-height: 30px; border: 1px solid #3d424c; background: #121419; border-radius: 5px; padding: 6px 8px; color: #cfd3dc; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .review-card { border: 1px solid var(--line-soft); border-radius: var(--radius); background: rgba(23,27,34,.92); padding: 14px; }
+    .review-card h3 { margin: 0 0 8px; font-size: 13px; }
+    .review-card p, .review-card li { color: var(--muted); font-size: 12px; }
+    .review-card ul { margin: 8px 0 0; padding-left: 18px; }
+    .review-card li + li { margin-top: 6px; }
+
+    .dialog {
+      min-height: 744px;
+      border-radius: 13px;
+      background: var(--surface);
+      border: 1px solid #3b424e;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: 62px auto minmax(0, 1fr) 60px;
+    }
+    .dialog-header { padding: 0 18px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--line-soft); background: #171a20; }
+    .dialog-heading { display: flex; align-items: center; gap: 10px; margin-right: 6px; min-width: 176px; }
+    .dialog-heading .badge-icon { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; background: var(--primary-soft); color: #b8adff; }
+    .dialog-heading strong { display: block; font-size: 15px; }
+    .dialog-heading small { display: block; color: var(--muted); font-size: 11px; }
+    .select-wrap, .search-wrap { position: relative; }
+    .select-wrap svg, .search-wrap svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--dim); pointer-events: none; }
+    .toolbar-select, .toolbar-search {
+      height: 36px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text); padding: 0 34px 0 34px;
+    }
+    .toolbar-select { min-width: 178px; padding-right: 28px; }
+    .toolbar-search { width: min(310px, 24vw); }
+    .header-spacer { flex: 1; }
+    .status-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 9px; border-radius: 999px; color: #b9dfca; background: rgba(85,189,137,.10); font-size: 11px; border: 1px solid rgba(85,189,137,.18); }
+    .status-chip.dirty { color: #f2ce8e; background: rgba(230,175,86,.1); border-color: rgba(230,175,86,.2); }
+    .status-chip .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+    .dialog-body { min-height: 0; display: grid; }
+    .bank-grid { grid-template-columns: 232px minmax(340px, 1fr) 330px; }
+    .mix-grid { grid-template-columns: 258px minmax(390px, 1fr) 326px; }
+    .panel { min-width: 0; min-height: 0; overflow: auto; border-right: 1px solid var(--line-soft); background: #191c22; }
+    .panel:last-child { border-right: 0; }
+    .panel-head { height: 49px; padding: 0 14px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--line-soft); position: sticky; top: 0; z-index: 4; background: rgba(25,28,34,.96); backdrop-filter: blur(8px); }
+    .panel-head strong { font-size: 12px; letter-spacing: .02em; }
+    .panel-head .count { color: var(--dim); font-size: 11px; }
+    .panel-spacer { flex: 1; }
+    .panel-body { padding: 10px; }
+
+    .tree-group { margin-bottom: 5px; }
+    .tree-row { width: 100%; min-height: 36px; padding: 0 9px; display: flex; align-items: center; gap: 8px; border: 0; border-radius: 6px; background: transparent; text-align: left; color: #c8cdd6; }
+    .tree-row:hover { background: var(--surface-2); }
+    .tree-row.active { background: var(--primary-soft); color: #dcd7ff; }
+    .tree-row.level-2 { padding-left: 28px; color: var(--muted); }
+    .tree-row.level-2.active { color: #e4e0ff; }
+    .tree-count { margin-left: auto; min-width: 24px; padding: 1px 6px; text-align: center; color: var(--dim); background: rgba(255,255,255,.035); border-radius: 999px; font-size: 10px; }
+    .manage-only { display: none !important; }
+    .dialog.manage-mode .manage-only { display: inline-flex !important; }
+    .dialog.manage-mode .select-only { display: none !important; }
+    .management-strip { display: none; padding: 9px 14px; border-bottom: 1px solid rgba(230,175,86,.2); color: #eac985; background: rgba(230,175,86,.065); font-size: 12px; align-items: center; gap: 8px; }
+    .dialog.manage-mode .management-strip { display: flex; }
+
+    .tag-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+    .tag-card { min-height: 72px; padding: 10px 11px; border: 1px solid var(--line-soft); border-radius: 8px; background: var(--surface-2); text-align: left; transition: border-color .16s, background .16s; position: relative; }
+    .tag-card:hover { border-color: #505968; background: #252a34; }
+    .tag-card.selected { border-color: var(--primary); background: var(--primary-soft); }
+    .tag-card.selected::after { content: "✓"; position: absolute; right: 9px; top: 8px; color: #beb5ff; font-weight: 800; }
+    .tag-en { color: #f0f2f6; font-size: 13px; padding-right: 18px; overflow-wrap: anywhere; }
+    .tag-zh { color: var(--muted); font-size: 11px; margin-top: 5px; }
+    .tag-path { color: var(--dim); font: 10px ui-monospace, Consolas, monospace; margin-top: 7px; display: flex; align-items: center; gap: 5px; }
+    .empty { min-height: 240px; display: grid; place-items: center; color: var(--muted); text-align: center; padding: 30px; }
+    .empty[hidden] { display: none; }
+    .empty strong { display: block; color: var(--text); margin-bottom: 5px; }
+
+    .selected-list { display: grid; gap: 7px; }
+    .selected-item { border: 1px solid var(--line-soft); border-radius: 8px; background: var(--surface-2); padding: 9px; display: grid; grid-template-columns: 20px minmax(0,1fr) 58px 30px; gap: 7px; align-items: center; }
+    .drag { color: var(--dim); display: grid; place-items: center; }
+    .selected-text { min-width: 0; }
+    .selected-text strong { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12px; }
+    .selected-text small { display: block; color: var(--muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 10px; margin-top: 2px; }
+    .weight { width: 58px; height: 30px; border: 1px solid var(--line); border-radius: 5px; background: #14171c; color: var(--text); padding: 0 6px; text-align: center; font-variant-numeric: tabular-nums; }
+    .remove-btn { width: 30px; height: 30px; border: 0; border-radius: 5px; color: var(--dim); background: transparent; display: grid; place-items: center; }
+    .remove-btn:hover { color: #ffafb4; background: rgba(224,108,117,.10); }
+    .preview-box { margin-top: 12px; border: 1px solid var(--line-soft); border-radius: 8px; background: #12151a; padding: 10px; }
+    .preview-box label { display: flex; justify-content: space-between; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 7px; }
+    .preview-text { color: #d8dce4; font: 11px/1.6 ui-monospace, Consolas, monospace; overflow-wrap: anywhere; min-height: 54px; }
+
+    .group-list { display: grid; gap: 7px; }
+    .group-card { padding: 10px; border: 1px solid var(--line-soft); border-radius: 8px; background: var(--surface-2); }
+    .group-card.active { border-color: rgba(139,124,246,.65); background: var(--primary-soft); }
+    .group-top { display: flex; align-items: center; gap: 8px; }
+    .group-name { flex: 1; min-width: 0; border: 0; background: transparent; text-align: left; padding: 0; font-weight: 650; }
+    .group-meta { color: var(--muted); font-size: 10px; margin-top: 6px; padding-left: 36px; }
+    .switch { width: 30px; height: 18px; border-radius: 99px; border: 1px solid #454d5a; background: #303642; padding: 2px; transition: background .15s; }
+    .switch::after { content: ""; display: block; width: 12px; height: 12px; border-radius: 50%; background: #9ba3b0; transition: transform .15s, background .15s; }
+    .switch.on { background: var(--primary-2); border-color: #8c80ed; }
+    .switch.on::after { transform: translateX(12px); background: #fff; }
+
+    .segmented { display: inline-flex; padding: 3px; border-radius: 7px; border: 1px solid var(--line-soft); background: #14171c; }
+    .segmented button { min-height: 28px; padding: 0 11px; border: 0; border-radius: 5px; color: var(--muted); background: transparent; font-size: 12px; }
+    .segmented button.active { color: #fff; background: var(--surface-3); box-shadow: inset 0 0 0 1px rgba(255,255,255,.05); }
+    .candidate-list { display: grid; gap: 8px; }
+    .candidate { min-height: 56px; padding: 9px 10px; border: 1px solid var(--line-soft); border-radius: 8px; background: var(--surface-2); display: grid; grid-template-columns: 22px minmax(0,1fr) 74px; gap: 8px; align-items: center; }
+    .candidate:hover { border-color: #4b5462; }
+    .candidate.selected { border-color: var(--primary); background: var(--primary-soft); }
+    .choice-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #626b78; display: grid; place-items: center; }
+    .candidate.selected .choice-dot { border-color: #a99eff; }
+    .candidate.selected .choice-dot::after { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #a99eff; }
+    .candidate.random-enabled .choice-dot { border-radius: 4px; background: var(--primary-2); border-color: #9d92f6; }
+    .candidate.random-enabled .choice-dot::after { content: "✓"; color: #fff; font-size: 11px; line-height: 1; }
+    .candidate-main { min-width: 0; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; }
+    .candidate-main strong { display: block; font-size: 12px; font-weight: 600; overflow-wrap: anywhere; }
+    .candidate-main small { display: block; color: var(--muted); font-size: 10px; margin-top: 3px; }
+    .chance { display: none; align-items: center; gap: 4px; color: var(--muted); font-size: 10px; }
+    .mix-random .chance { display: flex; }
+    .chance input { width: 48px; height: 28px; border: 1px solid var(--line); border-radius: 5px; background: #14171c; color: var(--text); text-align: center; }
+
+    .recipe-summary { display: grid; gap: 8px; }
+    .summary-row { display: flex; gap: 9px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
+    .summary-row:last-child { border-bottom: 0; }
+    .summary-index { width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; color: #c5bdff; background: var(--primary-soft); font: 10px ui-monospace, monospace; }
+    .summary-row strong { display: block; font-size: 11px; }
+    .summary-row small { display: block; color: var(--muted); font-size: 10px; margin-top: 2px; }
+    .seed-row { display: grid; grid-template-columns: 1fr 104px; gap: 8px; margin-top: 12px; }
+    .seed-row input { height: 36px; width: 100%; border: 1px solid var(--line); border-radius: 6px; background: #12151a; color: var(--text); padding: 0 9px; font-variant-numeric: tabular-nums; }
+
+    .dialog-footer { padding: 0 16px; display: flex; align-items: center; gap: 9px; border-top: 1px solid var(--line-soft); background: #171a20; }
+    .footer-message { color: var(--muted); font-size: 12px; display: flex; align-items: center; gap: 7px; }
+    .footer-message strong { color: var(--text); }
+    .footer-spacer { flex: 1; }
+
+    .menu { position: fixed; z-index: 80; min-width: 190px; padding: 6px; border: 1px solid var(--line); border-radius: 8px; background: #20242c; box-shadow: 0 18px 48px rgba(0,0,0,.5); display: none; }
+    .menu.open { display: block; }
+    .menu button { width: 100%; min-height: 34px; padding: 0 9px; border: 0; border-radius: 5px; background: transparent; text-align: left; color: #d7dbe3; display: flex; align-items: center; gap: 8px; }
+    .menu button:hover { background: #2d333e; }
+    .menu button.danger { color: #f1a4aa; }
+    .menu hr { border: 0; border-top: 1px solid var(--line-soft); margin: 5px 0; }
+
+    .toast-stack { position: fixed; right: 22px; bottom: 22px; z-index: 100; display: grid; gap: 8px; }
+    .toast { min-width: 280px; max-width: 420px; padding: 11px 13px; border: 1px solid #46505e; border-radius: 8px; background: #242a33; box-shadow: 0 16px 38px rgba(0,0,0,.42); animation: toast-in .2s ease-out; }
+    .toast strong { display: block; font-size: 12px; }
+    .toast span { display: block; color: var(--muted); font-size: 11px; margin-top: 2px; }
+    @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
+
+    .drawer { position: fixed; inset: 58px 0 0 auto; width: 410px; z-index: 70; background: #171a20; border-left: 1px solid var(--line); box-shadow: -22px 0 60px rgba(0,0,0,.35); transform: translateX(105%); transition: transform .22s ease-out; overflow: auto; }
+    .drawer.open { transform: translateX(0); }
+    .drawer-head { height: 56px; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid var(--line-soft); position: sticky; top: 0; background: #171a20; z-index: 2; }
+    .drawer-head strong { font-size: 14px; }
+    .drawer-body { padding: 16px; }
+    .function-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .function-table th, .function-table td { text-align: left; vertical-align: top; padding: 9px 7px; border-bottom: 1px solid var(--line-soft); }
+    .function-table th { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
+    .function-table td:first-child { color: #ddd8ff; width: 118px; font-weight: 650; }
+    .function-table td:last-child { color: #b4bbc6; }
+
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <svg aria-hidden="true" width="0" height="0" style="position:absolute">
+    <symbol id="i-bank" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 5.5v16M8 7h8M8 11h6"/></symbol>
+    <symbol id="i-mix" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M10 14v6"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h5l2 2h5a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></symbol>
+    <symbol id="i-grip" viewBox="0 0 24 24"><circle cx="9" cy="7" r="1"/><circle cx="15" cy="7" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="17" r="1"/><circle cx="15" cy="17" r="1"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M14 7l5 5-5 5"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5zM18.5 15l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></symbol>
+  </svg>
+
+  <header class="review-bar">
+    <div class="brand"><div class="brand-mark">E</div><div><strong>Elza Prompt Hub</strong><small>Bank / Mix UI 审查原型</small></div></div>
+    <nav class="review-tabs" aria-label="切换原型">
+      <button class="review-tab active" data-scene="bank">Prompt Bank</button>
+      <button class="review-tab" data-scene="mix">Prompt Mix</button>
+    </nav>
+    <div class="review-spacer"></div>
+    <div class="review-note"><span class="safe-dot"></span>原型不读取或写入任何 YAML</div>
+    <button class="btn" id="openGuide"><svg class="icon"><use href="#i-info"/></svg>按钮说明</button>
+  </header>
+
+  <main class="workspace">
+    <section class="scene active" id="scene-bank">
+      <div class="scene-layout">
+        <aside class="side-column">
+          <div class="canvas-label">ComfyUI node preview</div>
+          <div class="node">
+            <div class="node-title"><span>Elza Prompt Bank</span><span class="node-id">#18</span></div>
+            <div class="node-body">
+              <button class="node-btn" id="nodeOpenBank">打开 Prompt Bank</button>
+              <div class="node-field"><label><span>已选摘要</span><span id="nodeBankCount">3 项</span></label><textarea class="node-input" id="nodeBankSummary" readonly>masterpiece, 1girl, cinematic lighting</textarea></div>
+              <div class="node-field"><label>extra_prompt</label><textarea class="node-input">high detail, {red|blue} dress</textarea></div>
+            </div>
+          </div>
+          <div class="review-card"><h3>本版审查重点</h3><ul><li>选择词条和管理词库分成两个模式。</li><li>搜索结果直接显示文件与分类来源。</li><li>权重属于当前节点，不回写公共词条。</li><li>取消能完整放弃当前模式的草稿。</li></ul></div>
+        </aside>
+
+        <section class="dialog" id="bankDialog">
+          <header class="dialog-header">
+            <div class="dialog-heading"><span class="badge-icon"><svg class="icon icon-lg"><use href="#i-bank"/></svg></span><div><strong>Prompt Bank</strong><small id="bankModeLabel">选择词条</small></div></div>
+            <div class="select-wrap"><svg class="icon"><use href="#i-file"/></svg><select class="toolbar-select" id="bankFile"><option>人物基础词库</option><option>摄影与灯光</option><option>画风收藏</option><option>合并视图（只读）</option></select></div>
+            <div class="search-wrap"><svg class="icon"><use href="#i-search"/></svg><input class="toolbar-search" id="bankSearch" type="search" placeholder="搜索中文、Prompt 或来源路径"></div>
+            <div class="header-spacer"></div>
+            <span class="status-chip" id="bankStatus"><span class="status-dot"></span><span>已保存</span></span>
+            <button class="btn" id="bankMode"><span>管理词库</span></button>
+            <button class="btn icon-only" id="bankMore" aria-label="更多操作" title="导入、导出与重新载入"><svg class="icon"><use href="#i-more"/></svg></button>
+            <button class="btn ghost icon-only close-demo" aria-label="关闭"><svg class="icon"><use href="#i-close"/></svg></button>
+          </header>
+          <div>
+            <div class="management-strip"><svg class="icon"><use href="#i-info"/></svg>管理模式：修改先保存在草稿中，点击“保存词库”后才写入文件。</div>
+          </div>
+          <div class="dialog-body bank-grid">
+            <section class="panel">
+              <div class="panel-head"><strong>分类</strong><span class="count">3 / 8</span><span class="panel-spacer"></span><button class="btn ghost icon-only small manage-only" id="addBankCategory" title="新建分类"><svg class="icon"><use href="#i-plus"/></svg></button></div>
+              <div class="panel-body" id="bankTree">
+                <div class="tree-group"><div class="tree-row"><svg class="icon"><use href="#i-chevron"/></svg><span>人物</span><span class="tree-count">18</span></div><button class="tree-row level-2 active" data-category="人物 / 基础"><span>基础</span><span class="tree-count">8</span></button><button class="tree-row level-2" data-category="人物 / 外观"><span>外观</span><span class="tree-count">10</span></button></div>
+                <div class="tree-group"><div class="tree-row"><svg class="icon"><use href="#i-chevron"/></svg><span>摄影</span><span class="tree-count">21</span></div><button class="tree-row level-2" data-category="摄影 / 光照"><span>光照</span><span class="tree-count">12</span></button><button class="tree-row level-2" data-category="摄影 / 构图"><span>构图</span><span class="tree-count">9</span></button></div>
+                <div class="tree-group"><div class="tree-row"><svg class="icon"><use href="#i-chevron"/></svg><span>质量</span><span class="tree-count">6</span></div><button class="tree-row level-2" data-category="质量 / 通用"><span>通用</span><span class="tree-count">6</span></button></div>
+              </div>
+            </section>
+            <section class="panel">
+              <div class="panel-head"><strong id="bankListTitle">人物 / 基础</strong><span class="count" id="bankResultCount">8 个词条</span><span class="panel-spacer"></span><button class="btn small manage-only" id="addBankTag"><svg class="icon"><use href="#i-plus"/></svg>新建词条</button></div>
+              <div class="panel-body"><div class="tag-grid" id="bankTags"></div><div class="empty" id="bankEmpty" hidden><div><strong>没有匹配的词条</strong><span>试试更短的关键词，或清除搜索。</span><br><button class="btn small" id="clearSearch" style="margin-top:12px">清除搜索</button></div></div></div>
+            </section>
+            <section class="panel">
+              <div class="panel-head"><strong>已选内容</strong><span class="count" id="selectedCount">3 项</span><span class="panel-spacer"></span><button class="btn ghost small select-only" id="clearBankSelection">清空</button></div>
+              <div class="panel-body"><div class="selected-list" id="bankSelected"></div><div class="preview-box"><label><span>输出预览</span><span>注意力权重</span></label><div class="preview-text" id="bankPreview"></div></div></div>
+            </section>
+          </div>
+          <footer class="dialog-footer">
+            <div class="footer-message"><svg class="icon"><use href="#i-info"/></svg><span id="bankFooterText"><strong>选择模式</strong>只改变当前节点，不修改公共词库。</span></div>
+            <div class="footer-spacer"></div>
+            <button class="btn select-only" id="bankCancel">取消</button><button class="btn primary select-only" id="bankApply">应用到节点</button>
+            <button class="btn manage-only" id="bankDiscard">放弃修改</button><button class="btn primary manage-only" id="bankSave">保存词库</button>
+          </footer>
+        </section>
+      </div>
+    </section>
+
+    <section class="scene" id="scene-mix">
+      <div class="scene-layout">
+        <aside class="side-column">
+          <div class="canvas-label">ComfyUI node preview</div>
+          <div class="node">
+            <div class="node-title"><span>Elza Prompt Mix</span><span class="node-id">#24</span></div>
+            <div class="node-body">
+              <button class="node-btn" id="nodeOpenMix">打开 Prompt Mix</button>
+              <div class="node-field"><label><span>当前配方</span><span id="nodeMixCount">4 组启用</span></label><div class="node-mini" id="nodeMixRecipe">人像基础 · 固定/随机混合</div></div>
+              <div class="node-field"><label>seed</label><div class="node-mini" id="nodeMixSeed">260902</div></div>
+              <div class="node-field"><label>prefix</label><div class="node-line"><div class="node-mini">masterpiece, 1girl</div><span class="node-id">STRING</span></div></div>
+              <div class="node-field"><label>suffix</label><div class="node-line"><div class="node-mini">high detail</div><span class="node-id">STRING</span></div></div>
+            </div>
+          </div>
+          <div class="review-card"><h3>本版审查重点</h3><ul><li>旧版节点上的大量分组控件移入弹窗。</li><li>固定项直接显示文本，不再靠数字 index 猜测。</li><li>随机概率与模型注意力权重明确区分。</li><li>seed、启用状态和选择保存到节点状态。</li></ul></div>
+        </aside>
+
+        <section class="dialog" id="mixDialog">
+          <header class="dialog-header">
+            <div class="dialog-heading"><span class="badge-icon"><svg class="icon icon-lg"><use href="#i-mix"/></svg></span><div><strong>Prompt Mix</strong><small id="mixModeLabel">配置当前节点</small></div></div>
+            <div class="select-wrap"><svg class="icon"><use href="#i-spark"/></svg><select class="toolbar-select" id="recipeSelect"><option>人像基础</option><option>电影感肖像</option><option>快速出图</option></select></div>
+            <div class="header-spacer"></div>
+            <span class="status-chip" id="mixStatus"><span class="status-dot"></span><span>已保存</span></span>
+            <button class="btn" id="mixMode"><span>管理配方</span></button>
+            <button class="btn icon-only" id="mixMore" aria-label="更多配方操作" title="新建、复制、重命名和重置"><svg class="icon"><use href="#i-more"/></svg></button>
+            <button class="btn ghost icon-only close-demo" aria-label="关闭"><svg class="icon"><use href="#i-close"/></svg></button>
+          </header>
+          <div><div class="management-strip"><svg class="icon"><use href="#i-info"/></svg>管理模式：编辑配方、分组和候选项；保存前不会修改配方文件。</div></div>
+          <div class="dialog-body mix-grid" id="mixBody">
+            <section class="panel">
+              <div class="panel-head"><strong>配方分组</strong><span class="count" id="groupCount">4 / 4 启用</span><span class="panel-spacer"></span><button class="btn ghost icon-only small manage-only" id="addMixGroup" title="新建分组"><svg class="icon"><use href="#i-plus"/></svg></button></div>
+              <div class="panel-body"><div class="group-list" id="mixGroups"></div></div>
+            </section>
+            <section class="panel">
+              <div class="panel-head"><strong id="candidateTitle">光照 · 候选项</strong><span class="panel-spacer"></span><div class="segmented select-only" aria-label="选择模式"><button data-mix-choice="fixed">固定</button><button class="active" data-mix-choice="random">随机</button></div><button class="btn small manage-only" id="addCandidate"><svg class="icon"><use href="#i-plus"/></svg>新建候选项</button></div>
+              <div class="panel-body"><div class="candidate-list" id="mixCandidates"></div></div>
+            </section>
+            <section class="panel">
+              <div class="panel-head"><strong>生成预览</strong><span class="panel-spacer"></span><button class="btn ghost small select-only" id="resetMix">重置</button></div>
+              <div class="panel-body">
+                <div class="recipe-summary" id="mixSummary"></div>
+                <div class="seed-row select-only"><input id="mixSeed" type="number" value="260902" aria-label="预览 seed"><button class="btn" id="nextMix">换一个</button></div>
+                <div class="preview-box"><label><span>最终 Prompt</span><span id="previewMode">seed 260902</span></label><div class="preview-text" id="mixPreview"></div></div>
+                <button class="btn select-only" id="tryMix" style="width:100%;margin-top:10px"><svg class="icon"><use href="#i-spark"/></svg>试生成</button>
+              </div>
+            </section>
+          </div>
+          <footer class="dialog-footer">
+            <div class="footer-message"><svg class="icon"><use href="#i-info"/></svg><span id="mixFooterText"><strong>配置模式</strong>保存当前节点的启用、固定/随机和 seed。</span></div>
+            <div class="footer-spacer"></div>
+            <button class="btn select-only" id="mixCancel">取消</button><button class="btn primary select-only" id="mixApply">应用到节点</button>
+            <button class="btn manage-only" id="mixDiscard">放弃修改</button><button class="btn primary manage-only" id="mixSave">保存配方</button>
+          </footer>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <div class="menu" id="bankMenu"><button data-action="import">导入词库文件</button><button data-action="export">导出当前词库</button><button data-action="reload">重新载入</button></div>
+  <div class="menu" id="mixMenu"><button data-action="new">新建配方</button><button data-action="copy">复制当前配方</button><button data-action="rename">重命名</button><hr><button data-action="reset">重置节点配置</button><button class="danger" data-action="delete">删除配方</button></div>
+  <div class="toast-stack" id="toasts" aria-live="polite"></div>
+
+  <aside class="drawer" id="guideDrawer" aria-label="按钮功能说明">
+    <div class="drawer-head"><strong>按钮功能说明</strong><span class="header-spacer"></span><button class="btn ghost icon-only" id="closeGuide" aria-label="关闭说明"><svg class="icon"><use href="#i-close"/></svg></button></div>
+    <div class="drawer-body">
+      <h3>Prompt Bank</h3>
+      <table class="function-table"><thead><tr><th>按钮</th><th>功能</th></tr></thead><tbody>
+        <tr><td>词库文件</td><td>切换当前词库；“合并视图”只读并显示准确来源。</td></tr>
+        <tr><td>管理词库</td><td>进入文件、分类、词条的草稿编辑模式。</td></tr>
+        <tr><td>新建分类/词条</td><td>只修改管理草稿，保存前不写文件。</td></tr>
+        <tr><td>清空</td><td>清除当前节点已选内容，不删除公共词条。</td></tr>
+        <tr><td>应用到节点</td><td>保存当前节点的选择、顺序、权重和文本快照。</td></tr>
+        <tr><td>保存词库</td><td>校验后原子保存管理草稿；失败时保留草稿。</td></tr>
+      </tbody></table>
+      <h3 style="margin-top:24px">Prompt Mix</h3>
+      <table class="function-table"><thead><tr><th>按钮</th><th>功能</th></tr></thead><tbody>
+        <tr><td>配方选择</td><td>切换当前节点引用的配方，并保留节点覆盖设置。</td></tr>
+        <tr><td>管理配方</td><td>编辑配方、分组和候选项数据。</td></tr>
+        <tr><td>固定 / 随机</td><td>固定选择一项，或根据 seed 与随机概率选择。</td></tr>
+        <tr><td>换一个</td><td>仅改变预览 seed；应用后才写入节点。</td></tr>
+        <tr><td>试生成</td><td>使用当前草稿生成一次预览，不保存。</td></tr>
+        <tr><td>应用到节点</td><td>保存配方引用、分组状态、模式、候选项和 seed。</td></tr>
+        <tr><td>保存配方</td><td>校验并原子保存配方数据草稿。</td></tr>
+      </tbody></table>
+    </div>
+  </aside>
+
+  <script>
+    const $ = (selector, root = document) => root.querySelector(selector);
+    const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+
+    const tagData = [
+      { id: "t01", zh: "杰作", en: "masterpiece", path: "人物基础词库 / 质量 / 通用" },
+      { id: "t02", zh: "单人女性", en: "1girl", path: "人物基础词库 / 人物 / 基础" },
+      { id: "t03", zh: "单人男性", en: "1boy", path: "人物基础词库 / 人物 / 基础" },
+      { id: "t04", zh: "精致面容", en: "detailed face", path: "人物基础词库 / 人物 / 基础" },
+      { id: "t05", zh: "电影光照", en: "cinematic lighting", path: "摄影与灯光 / 摄影 / 光照" },
+      { id: "t06", zh: "柔和轮廓光", en: "soft rim light", path: "摄影与灯光 / 摄影 / 光照" },
+      { id: "t07", zh: "浅景深", en: "shallow depth of field", path: "摄影与灯光 / 摄影 / 构图" },
+      { id: "t08", zh: "高细节", en: "highly detailed", path: "人物基础词库 / 质量 / 通用" },
+    ];
+    let selectedTags = [
+      { ...tagData[0], weight: 1 },
+      { ...tagData[1], weight: 1 },
+      { ...tagData[4], weight: 1.15 },
+    ];
+
+    const mixData = [
+      { id: "g1", name: "主体", enabled: true, mode: "fixed", fixed: 0, items: [
+        { text: "1girl", note: "人物主体", chance: 1, enabled: true },
+        { text: "1boy", note: "人物主体", chance: 1, enabled: true },
+        { text: "humanoid robot", note: "非人主体", chance: .5, enabled: true },
+      ]},
+      { id: "g2", name: "发型", enabled: true, mode: "random", fixed: 0, items: [
+        { text: "long hair", note: "长发", chance: 1, enabled: true },
+        { text: "short hair", note: "短发", chance: 1, enabled: true },
+        { text: "twin tails", note: "双马尾", chance: .7, enabled: true },
+      ]},
+      { id: "g3", name: "光照", enabled: true, mode: "random", fixed: 0, items: [
+        { text: "soft studio lighting", note: "柔和摄影棚光", chance: 1, enabled: true },
+        { text: "cinematic rim lighting", note: "电影轮廓光", chance: 1.5, enabled: true },
+        { text: "warm window light", note: "暖色窗光", chance: .8, enabled: true },
+      ]},
+      { id: "g4", name: "画风", enabled: true, mode: "fixed", fixed: 1, items: [
+        { text: "anime style", note: "动漫", chance: 1, enabled: true },
+        { text: "realistic style", note: "写实", chance: 1, enabled: true },
+        { text: "oil painting", note: "油画", chance: .5, enabled: true },
+      ]},
+    ];
+    let activeGroup = "g3";
+    let previewChoices = {};
+
+    function icon(id) { return `<svg class="icon"><use href="#${id}"/></svg>`; }
+    function toast(title, message) {
+      const el = document.createElement("div");
+      el.className = "toast";
+      const strong = document.createElement("strong"); strong.textContent = title;
+      const span = document.createElement("span"); span.textContent = message;
+      el.append(strong, span); $("#toasts").append(el);
+      setTimeout(() => el.remove(), 3600);
+    }
+    function setDirty(type, dirty = true) {
+      const chip = $(`#${type}Status`);
+      chip.classList.toggle("dirty", dirty);
+      $("span:last-child", chip).textContent = dirty ? "有未保存修改" : "已保存";
+    }
+    function closeMenus() { $$(".menu.open").forEach(el => el.classList.remove("open")); }
+    function openMenu(button, menu) {
+      closeMenus();
+      const rect = button.getBoundingClientRect();
+      menu.style.left = `${Math.max(8, rect.right - 190)}px`;
+      menu.style.top = `${rect.bottom + 6}px`;
+      menu.classList.add("open");
+    }
+
+    function renderBank() {
+      const query = $("#bankSearch").value.trim().toLowerCase();
+      const filtered = tagData.filter(t => !query || `${t.zh} ${t.en} ${t.path}`.toLowerCase().includes(query));
+      $("#bankTags").replaceChildren(...filtered.map(tag => {
+        const button = document.createElement("button");
+        button.className = `tag-card${selectedTags.some(item => item.id === tag.id) ? " selected" : ""}`;
+        button.dataset.id = tag.id;
+        const en = document.createElement("div"); en.className = "tag-en"; en.textContent = tag.en;
+        const zh = document.createElement("div"); zh.className = "tag-zh"; zh.textContent = tag.zh;
+        const path = document.createElement("div"); path.className = "tag-path"; path.innerHTML = `${icon("i-arrow")}<span></span>`; $("span", path).textContent = tag.path;
+        button.append(en, zh, path);
+        button.addEventListener("click", () => {
+          if ($("#bankDialog").classList.contains("manage-mode")) { toast("编辑词条", `管理模式中打开“${tag.zh}”编辑表单。`); return; }
+          const index = selectedTags.findIndex(item => item.id === tag.id);
+          if (index >= 0) selectedTags.splice(index, 1); else selectedTags.push({ ...tag, weight: 1 });
+          setDirty("bank"); renderBank();
+        });
+        return button;
+      }));
+      $("#bankResultCount").textContent = `${filtered.length} 个词条`;
+      $("#bankEmpty").hidden = filtered.length > 0;
+      $("#bankTags").hidden = filtered.length === 0;
+
+      $("#bankSelected").replaceChildren(...selectedTags.map(item => {
+        const row = document.createElement("div"); row.className = "selected-item";
+        row.innerHTML = `<span class="drag">${icon("i-grip")}</span><span class="selected-text"><strong></strong><small></small></span><input class="weight" type="number" step="0.05" min="0" max="3" aria-label="${item.zh}提示词权重"><button class="remove-btn" aria-label="移除${item.zh}">${icon("i-close")}</button>`;
+        $("strong", row).textContent = item.en; $("small", row).textContent = item.zh; $(".weight", row).value = item.weight;
+        $(".weight", row).addEventListener("change", event => { item.weight = Math.max(0, Number(event.target.value) || 1); setDirty("bank"); updateBankPreview(); });
+        $(".remove-btn", row).addEventListener("click", () => { selectedTags = selectedTags.filter(tag => tag.id !== item.id); setDirty("bank"); renderBank(); });
+        return row;
+      }));
+      $("#selectedCount").textContent = `${selectedTags.length} 项`;
+      updateBankPreview();
+    }
+    function updateBankPreview() {
+      const output = selectedTags.map(t => Number(t.weight) === 1 ? t.en : `(${t.en}:${Number(t.weight).toFixed(2).replace(/0+$/, "").replace(/\.$/, "")})`).join(", ");
+      $("#bankPreview").textContent = output || "(空)";
+    }
+    function toggleBankMode() {
+      const dialog = $("#bankDialog"); const manage = dialog.classList.toggle("manage-mode");
+      $("#bankMode span").textContent = manage ? "返回选择" : "管理词库";
+      $("#bankModeLabel").textContent = manage ? "管理词库数据" : "选择词条";
+      $("#bankFooterText").innerHTML = manage ? "<strong>管理模式</strong>保存词库数据草稿，不改变当前节点选择。" : "<strong>选择模式</strong>只改变当前节点，不修改公共词库。";
+      setDirty("bank", false);
+    }
+
+    function activeMixGroup() { return mixData.find(group => group.id === activeGroup); }
+    function renderMix() {
+      $("#mixGroups").replaceChildren(...mixData.map(group => {
+        const card = document.createElement("div"); card.className = `group-card${group.id === activeGroup ? " active" : ""}`;
+        card.innerHTML = `<div class="group-top"><button class="switch ${group.enabled ? "on" : ""}" aria-label="${group.enabled ? "关闭" : "启用"}${group.name}"></button><button class="group-name"></button><span class="tree-count">${group.items.length}</span></div><div class="group-meta"></div>`;
+        $(".group-name", card).textContent = group.name;
+        $(".group-meta", card).textContent = group.enabled ? `${group.mode === "random" ? "随机" : "固定"} · ${previewChoices[group.id] ?? group.items[group.fixed]?.text ?? "未选择"}` : "已关闭，不参与输出";
+        $(".group-name", card).addEventListener("click", () => { activeGroup = group.id; renderMix(); });
+        $(".switch", card).addEventListener("click", () => { group.enabled = !group.enabled; setDirty("mix"); generateMix(false); renderMix(); });
+        return card;
+      }));
+      const enabledCount = mixData.filter(group => group.enabled).length;
+      $("#groupCount").textContent = `${enabledCount} / ${mixData.length} 启用`;
+      const group = activeMixGroup();
+      $("#candidateTitle").textContent = `${group.name} · 候选项`;
+      $("#mixBody").classList.toggle("mix-random", group.mode === "random");
+      $$('[data-mix-choice]').forEach(button => button.classList.toggle("active", button.dataset.mixChoice === group.mode));
+      $("#mixCandidates").replaceChildren(...group.items.map((item, index) => {
+        const card = document.createElement("div");
+        const chosen = group.mode === "fixed" ? group.fixed === index : item.enabled;
+        card.className = `candidate${group.mode === "fixed" && chosen ? " selected" : ""}${group.mode === "random" && chosen ? " random-enabled" : ""}`;
+        card.innerHTML = `<button class="choice-dot" aria-label="选择${item.text}"></button><button class="candidate-main"><strong></strong><small></small></button><label class="chance"><input type="number" min="0" step="0.1" aria-label="${item.text}随机概率"><span>概率</span></label>`;
+        $("strong", card).textContent = item.text; $("small", card).textContent = item.note; $(".chance input", card).value = item.chance;
+        const choose = () => { if (group.mode === "fixed") group.fixed = index; else item.enabled = !item.enabled; setDirty("mix"); generateMix(false); renderMix(); };
+        $(".choice-dot", card).addEventListener("click", choose); $(".candidate-main", card).addEventListener("click", choose);
+        $(".chance input", card).addEventListener("change", event => { item.chance = Math.max(0, Number(event.target.value) || 0); setDirty("mix"); generateMix(false); renderMixSummary(); });
+        return card;
+      }));
+      renderMixSummary();
+    }
+    function seededIndex(seed, group, items) {
+      const total = items.reduce((sum, item) => sum + Math.max(0, item.chance), 0);
+      if (!total) return 0;
+      let value = Math.abs(Math.sin((Number(seed) || 0) * 12.9898 + group.id.charCodeAt(1) * 78.233) * 43758.5453) % 1 * total;
+      for (let index = 0; index < items.length; index++) { value -= Math.max(0, items[index].chance); if (value <= 0) return index; }
+      return items.length - 1;
+    }
+    function generateMix(showToast = true) {
+      const seed = Number($("#mixSeed").value) || 0;
+      previewChoices = {};
+      mixData.forEach(group => {
+        if (!group.enabled || !group.items.length) return;
+        if (group.mode === "fixed") previewChoices[group.id] = group.items[group.fixed]?.text || "";
+        else {
+          const enabled = group.items.filter(item => item.enabled && item.chance > 0);
+          previewChoices[group.id] = enabled.length ? enabled[seededIndex(seed, group, enabled)].text : "";
+        }
+      });
+      $("#mixPreview").textContent = ["masterpiece", ...mixData.filter(group => group.enabled).map(group => previewChoices[group.id]).filter(Boolean), "high detail"].join(", ");
+      $("#previewMode").textContent = `seed ${seed}`;
+      renderMixSummary();
+      if (showToast) toast("已生成预览", "这次预览不会写入节点，点击“应用到节点”后才保存。" );
+    }
+    function renderMixSummary() {
+      $("#mixSummary").replaceChildren(...mixData.filter(group => group.enabled).map((group, index) => {
+        const row = document.createElement("div"); row.className = "summary-row";
+        row.innerHTML = `<span class="summary-index">${index + 1}</span><span><strong></strong><small></small></span>`;
+        $("strong", row).textContent = group.name;
+        $("small", row).textContent = `${group.mode === "random" ? "随机" : "固定"} · ${previewChoices[group.id] || group.items[group.fixed]?.text || "待生成"}`;
+        return row;
+      }));
+    }
+    function toggleMixMode() {
+      const dialog = $("#mixDialog"); const manage = dialog.classList.toggle("manage-mode");
+      $("#mixMode span").textContent = manage ? "返回配置" : "管理配方";
+      $("#mixModeLabel").textContent = manage ? "管理配方数据" : "配置当前节点";
+      $("#mixFooterText").innerHTML = manage ? "<strong>管理模式</strong>修改配方数据草稿，不改变当前节点状态。" : "<strong>配置模式</strong>保存当前节点的启用、固定/随机和 seed。";
+      setDirty("mix", false);
+    }
+
+    $$(".review-tab").forEach(button => button.addEventListener("click", () => {
+      $$(".review-tab").forEach(item => item.classList.toggle("active", item === button));
+      $$(".scene").forEach(scene => scene.classList.toggle("active", scene.id === `scene-${button.dataset.scene}`));
+      closeMenus();
+    }));
+    $("#bankSearch").addEventListener("input", renderBank);
+    $("#clearSearch").addEventListener("click", () => { $("#bankSearch").value = ""; renderBank(); });
+    $("#clearBankSelection").addEventListener("click", () => { selectedTags = []; setDirty("bank"); renderBank(); toast("已清空当前选择", "公共词库中的词条没有被删除。" ); });
+    $("#bankMode").addEventListener("click", toggleBankMode);
+    $("#bankApply").addEventListener("click", () => { setDirty("bank", false); $("#nodeBankCount").textContent = `${selectedTags.length} 项`; $("#nodeBankSummary").value = selectedTags.map(t => t.en).join(", ") || "(空)"; toast("已应用到节点", "已保存选择顺序、提示词权重和文本快照。" ); });
+    $("#bankCancel").addEventListener("click", () => toast("已取消", "正式版本会恢复打开弹窗前的节点选择。"));
+    $("#bankSave").addEventListener("click", () => { setDirty("bank", false); toast("词库已保存", "正式版本使用校验和原子替换；此原型不写入文件。" ); });
+    $("#bankDiscard").addEventListener("click", () => { setDirty("bank", false); toast("已放弃管理草稿", "正式版本会恢复进入管理模式前的数据。" ); });
+    $("#addBankCategory").addEventListener("click", () => { setDirty("bank"); toast("新建分类", "这里将打开带稳定 ID 的分类表单。" ); });
+    $("#addBankTag").addEventListener("click", () => { setDirty("bank"); toast("新建词条", "字段包括中文、Prompt、别名和来源信息。" ); });
+    $("#bankFile").addEventListener("change", event => toast("切换词库", `已切换到“${event.target.value}”；有草稿时会先询问。`));
+    $$("#bankTree .level-2").forEach(button => button.addEventListener("click", () => { $$("#bankTree .level-2").forEach(row => row.classList.toggle("active", row === button)); $("#bankListTitle").textContent = button.dataset.category; }));
+
+    $$('[data-mix-choice]').forEach(button => button.addEventListener("click", () => { activeMixGroup().mode = button.dataset.mixChoice; setDirty("mix"); generateMix(false); renderMix(); }));
+    $("#mixMode").addEventListener("click", toggleMixMode);
+    $("#mixSeed").addEventListener("change", () => { setDirty("mix"); generateMix(false); });
+    $("#tryMix").addEventListener("click", () => generateMix(true));
+    $("#nextMix").addEventListener("click", () => { $("#mixSeed").value = Number($("#mixSeed").value || 0) + 1; setDirty("mix"); generateMix(false); toast("已更换预览", "seed 已增加 1；尚未写入节点。" ); });
+    $("#resetMix").addEventListener("click", () => { $("#mixSeed").value = 260902; mixData.forEach(group => group.enabled = true); setDirty("mix"); generateMix(false); renderMix(); toast("已重置节点配置", "配方文件没有被修改。" ); });
+    $("#mixApply").addEventListener("click", () => { setDirty("mix", false); $("#nodeMixSeed").textContent = $("#mixSeed").value; $("#nodeMixCount").textContent = `${mixData.filter(g => g.enabled).length} 组启用`; toast("已应用到节点", "配方引用、节点覆盖配置和 seed 已保存。" ); });
+    $("#mixCancel").addEventListener("click", () => toast("已取消", "正式版本会恢复打开弹窗前的节点配置。"));
+    $("#mixSave").addEventListener("click", () => { setDirty("mix", false); toast("配方已保存", "正式版本使用校验和原子替换；此原型不写入文件。" ); });
+    $("#mixDiscard").addEventListener("click", () => { setDirty("mix", false); toast("已放弃配方草稿", "节点配置保持不变。" ); });
+    $("#addMixGroup").addEventListener("click", () => { setDirty("mix"); toast("新建分组", "新分组默认启用并使用固定模式。" ); });
+    $("#addCandidate").addEventListener("click", () => { setDirty("mix"); toast("新建候选项", "支持直接 Prompt 或后续引用 Bank 词条。" ); });
+    $("#recipeSelect").addEventListener("change", event => toast("切换配方", `当前节点将引用“${event.target.value}”。`));
+
+    $("#bankMore").addEventListener("click", event => { event.stopPropagation(); openMenu(event.currentTarget, $("#bankMenu")); });
+    $("#mixMore").addEventListener("click", event => { event.stopPropagation(); openMenu(event.currentTarget, $("#mixMenu")); });
+    $$(".menu button").forEach(button => button.addEventListener("click", () => { toast("操作预览", button.textContent.trim()); closeMenus(); }));
+    document.addEventListener("click", closeMenus);
+    $("#openGuide").addEventListener("click", () => $("#guideDrawer").classList.add("open"));
+    $("#closeGuide").addEventListener("click", () => $("#guideDrawer").classList.remove("open"));
+    $$(".close-demo").forEach(button => button.addEventListener("click", () => toast("关闭弹窗", "正式版本检测到未保存修改时，会要求保存、放弃或返回。")));
+    $("#nodeOpenBank").addEventListener("click", () => { $$(".review-tab")[0].click(); toast("Prompt Bank 已打开", "默认进入选择模式。" ); });
+    $("#nodeOpenMix").addEventListener("click", () => { $$(".review-tab")[1].click(); toast("Prompt Mix 已打开", "默认进入当前节点配置模式。" ); });
+
+    renderBank(); generateMix(false); renderMix();
+  </script>
+</body>
+</html>
