@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0 — 2026-09-15
+
+- 正式发布 Prompt Switch、Custom Prompt Join、Prompt Bank、Prompt Mixer、Random Prompt 与 Image Resolution 六个节点。
+- Bank/Mixer 使用插件相对路径词库，提供 YAML 增删查改、导入导出、另存备份及打开词库目录功能。
+- 支持 `{a|b|c}`、`{0.5::a|1.5::b}`、`{2$$a|b|c}` 与 `{a|}` 随机语法。
+- Custom Prompt Join 的随机模式在每次 Queue 前生成并显示实际运行 seed；固定模式可按 seed 复现。
+- 完成节点动态 UI、高度计算、workflow 状态保存、词条权重与图片分辨率缩放等功能修复。
+
 ## 0.2.0-alpha.18 — 2026-09-15
 
 - 修复 `Elza Custom Prompt Join` 随机模式与 seed 脱节：每次 Queue 前生成新的运行 seed，并在 workflow 属性中保存。

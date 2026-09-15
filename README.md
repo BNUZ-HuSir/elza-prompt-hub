@@ -1,6 +1,6 @@
 # Elza Prompt Hub
 
-Elza 的 ComfyUI Prompt 管理与随机语法节点集。当前版本：`0.2.0-alpha.18`。
+Elza 的 ComfyUI Prompt 管理与随机语法节点集。当前版本：`0.2.0`。
 
 ## 安装
 
